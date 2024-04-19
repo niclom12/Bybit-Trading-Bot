@@ -1,33 +1,39 @@
-
-import numpy as np
 from math import sqrt
 
 
-#data has to be rearanged from least recent at index 0 
-def raw_hma(data, period):
-    out = 2*wma(data, round(period/2)) - wma(data, period)
-    return out
-    
 def wma(data, period):
-    weights = list(range(1, period+1)) 
-    wma = sum(weight*price for weight, price in zip(weights, data[-period:])) / sum(weights)
-    return wma
+    norm = 0.0
+    sum = 0.0
+    for i in range(period):
+        weight = (period - i) * period
+        norm += weight
+        sum += data[i] * weight
+    return sum / norm
 
-def create_data_set(data):
-    data_new = create_arrays(data, 55, 12)
-    return [raw_hma(np.flip(array), 55) for array in data_new]
+def Hulls(data, period):
+    wma_55 = [None] * 55
+    wma_2 = [None] * 55
 
-def create_arrays(data, x, rang):
-    return [data[i:i+x] for i in range(rang)]
+    # Calculate WMA
+    for i in range(55):
+        if i + 55 <= len(data):  # Ensure there is enough data to calculate WMA
+            wma_55[i] = wma(data[i:i+55], 55)
+        if i + 27 <= len(data):  # Ensure there is enough data to calculate WMA for half of 55
+            wma_2[i] = wma(data[i:i+27], 27)  # Use 27 as the period, rounded down from 27.5
 
-
-def Hulls(array):
-    arrays = create_arrays(array, round(sqrt(55)), 5)
-    return np.array([wma(np.flip(array), round(sqrt(55))) for array in arrays]).astype(float)
+    hma_raw = [None] * 20
+    for i in range(20):
+        hma_raw[i] = (2 * wma_2[i]) - wma_55[i]
+        
+    hull = [None] * 4
+    for i in range(4):
+        hull[i] = wma(hma_raw[i:], round(sqrt(55)))
+        
+    return hull
 
 def logic(data):
-    raw_hma = create_data_set(data)
-    hull = Hulls(raw_hma)
+    hull = Hulls(data, 55)
+    print(hull)
     hul1 = hull[0] - hull[2]
     hul2 = hull[1] - hull[3]
     if ((hul1 >= 0) and (hul2 < 0)):
@@ -42,5 +48,3 @@ def logic(data):
     else:
         print("Bearish")
         return
-
-
