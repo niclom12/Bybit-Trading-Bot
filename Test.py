@@ -7,7 +7,7 @@ import datetime
 from pybit.unified_trading import HTTP
 import numpy as np
 import pandas as pd
-from Hull import  Hulls, create_data_set, logic
+from Hull import  logic
 
 """
 session = HTTP(api_key=config_api_key, api_secret=config_api_key_secret)
@@ -226,7 +226,58 @@ price = str(bit.market_price(token))
 log_trade("Sell", token, "200", price)
 """
 
+"""
+bit = Bybit(config_api_key, config_api_key_secret, account_type)
+price_df = bit.session.get_kline(
+                category='inverse',
+                symbol="BTCUSD",
+                interval=30,
+                limit=10
+                )['result']['list']
+price_df = pd.DataFrame(price_df)
+price_df.columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Turnover']
+resp = price_df.set_index('Time')
+resp = resp.astype(float)
+resp = resp['Close']
+print(resp)
+"""
+bit = Bybit(config_api_key, config_api_key_secret, account_type)
+data = bit.get_klines("BTCUSD", 120)
+side = logic(data)
 
+"""
+wma_55 = [None] * 55
+wma_2 = [None] * 55
+
+# Calculate WMA
+for i in range(55):
+    if i + 55 <= len(data):  # Ensure there is enough data to calculate WMA
+        wma_55[i] = wma(data[i:i+55], 55)
+    if i + 27 <= len(data):  # Ensure there is enough data to calculate WMA for half of 55
+        wma_2[i] = wma(data[i:i+27], 27)  # Use 27 as the period, rounded down from 27.5
+
+
+hma_raw = [None] * 20
+for i in range(20):
+    hma_raw[i] = (2 * wma_2[i]) - wma_55[i]
+
+hull = [None] * 3
+for i in range(3):
+    hull[i] = wma(hma_raw[i:], round(sqrt(55)))
+    
+print(hull)
+
+"""
+
+
+
+"""
+print(raw_hma(data, 55))
+side = logic(data)
+print(side)
+"""
+
+"""
 bit = Bybit(config_api_key, config_api_key_secret, account_type)
 pos = bit.session.get_positions(
     category="inverse",
@@ -236,6 +287,8 @@ balance = float(bit.get_balance("BTCUSD".split("USD")[0]))
 balance = balance * bit.market_price("BTCUSD")
 print(balance)
 print(pos)
+"""
+
 """
 bit = Bybit(config_api_key, config_api_key_secret, account_type)
 t = bit.session.place_order(
