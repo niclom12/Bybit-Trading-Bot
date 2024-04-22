@@ -1,3 +1,4 @@
+import numpy as np
 from math import sqrt
 
 
@@ -48,3 +49,5 @@ def logic(data):
     else:
         print("Bearish")
         return
+
+
