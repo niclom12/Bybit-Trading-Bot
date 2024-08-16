@@ -5,7 +5,6 @@ from logmaker import log_error, log_response
 
 
 class Bybit:
-    positions = {"BTCUSD":"A", "ETHUSD":"A"}
 
     def __init__(self, api, secret, accounttype):
         self.api = api
@@ -13,7 +12,6 @@ class Bybit:
         self.accountType = accounttype
         try:
             self.session = HTTP(api_key=self.api, api_secret=self.secret)
-            print("connected......................")
         except Exception as err:
             print("failed to connect")
             log_error(err)
@@ -32,7 +30,6 @@ class Bybit:
             resp = resp.set_index('Time')
             resp = resp.astype(float)
             resp = resp['Close']
-            resp = resp[1:]
             return resp.values
         except Exception as err:
             log_error(err)
@@ -69,10 +66,9 @@ class Bybit:
                 qty=quant,
                 isLeverage=1,
                 orderFilter="Order"
-                )['retCode']
-                self.positions[symbol] = str(quant)
-            elif(self.positions[symbol] != "A"):
-                quant = str(self.positions[symbol])
+                )['retCode'] # type: ignore
+            elif(side == "Sell"):
+                quant = quant
                 resp = self.session.place_order(
                 category="inverse",
                 symbol=symbol,
@@ -82,8 +78,7 @@ class Bybit:
                 isLeverage=1,
                 orderFilter="Order",
                 #reduceOnly="true"
-                )['retCode']
-                self.positions[symbol] = "0"
+                )['retCode'] # type: ignore
             return int(resp)
         except Exception as err:
             log_error(err)
@@ -111,3 +106,17 @@ class Bybit:
             )
         except Exception as err:
             log_error(err)
+            
+    def get_buy_amount(self, symbol, hull, mem, closing_price):
+        try:
+            coin_balance = float(self.get_balance(symbol.split("USD")[0]))
+            b3 = abs(((closing_price - hull) / closing_price) * 100)
+            amount = (closing_price * coin_balance)
+            memory_lev = 9 - int(mem)
+            lev = (100 / (memory_lev * (b3 * 0.9206 + 1.4126)))
+            if (lev >= 10):
+                lev = 10
+            amount = round(amount * lev)
+            return amount
+        except Exception as e:
+            log_error(e)
